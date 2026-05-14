@@ -14,10 +14,19 @@
   --gold-dark:#8B6914; --cream:#FAF6ED;
   --ink:#1A1208; --ink-soft:#3D2B0E; --ink-muted:#7A5C2E;
 }
-html,body {
-  width:100%; min-height:100vh; background:#0E0A04;
-  display:flex; align-items:center; justify-content:center;
-  font-family:'Cormorant Garamond',serif; overflow-x:hidden;
+body {
+  -webkit-overflow-scrolling: touch;
+}
+html, body {
+  width:100%;
+  min-height:100%;
+  background:#0E0A04;
+  font-family:'Cormorant Garamond',serif;
+  overflow-x:hidden;
+}
+
+body {
+  display:block;
 }
 .bg-deep { position:fixed; inset:0; background:radial-gradient(ellipse at 50% 30%,#1E1206 0%,#0A0603 60%,#050301 100%); z-index:0; }
 .particles { position:fixed; inset:0; z-index:1; pointer-events:none; overflow:hidden; }
@@ -26,8 +35,18 @@ html,body {
 .confetti-wrap { position:fixed; inset:0; pointer-events:none; z-index:50; overflow:hidden; }
 
 /* SCENE */
-.scene { width:100%; max-width:430px; min-height:100vh; position:relative; z-index:10; display:flex; align-items:center; justify-content:center; padding:40px 24px 110px; }
-.card-scene { width:100%; }
+.scene {
+  width:100%;
+  max-width:430px;
+  min-height:100vh;
+  margin:auto;
+  position:relative;
+  z-index:10;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:40px 24px 110px;
+}
 
 @keyframes rise { from{opacity:0;transform:translateY(40px) scale(.95)} to{opacity:1;transform:translateY(0) scale(1)} }
 
@@ -399,11 +418,9 @@ shareBtn.addEventListener('click', async (e) => {
   }
 });
 
+
+
 // iOS no pull-to-refresh
-document.body.addEventListener('touchmove', (e) => {
-  if (e.target.closest('.edit-overlay')) return;
-  e.preventDefault();
-}, {passive:false});
 </script>
 </body>
 </html>
