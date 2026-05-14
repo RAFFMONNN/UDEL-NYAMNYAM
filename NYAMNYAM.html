@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Kartu Ulang Tahun</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --gold:#C9A84C; --gold-light:#E8C97B; --gold-pale:#F5E9C8;
+  --gold-dark:#8B6914; --cream:#FAF6ED;
+  --ink:#1A1208; --ink-soft:#3D2B0E; --ink-muted:#7A5C2E;
+}
+html,body {
+  width:100%; min-height:100vh; background:#0E0A04;
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Cormorant Garamond',serif; overflow-x:hidden;
+}
+.bg-deep { position:fixed; inset:0; background:radial-gradient(ellipse at 50% 30%,#1E1206 0%,#0A0603 60%,#050301 100%); z-index:0; }
+.particles { position:fixed; inset:0; z-index:1; pointer-events:none; overflow:hidden; }
+.particle { position:absolute; width:2px; height:2px; background:var(--gold-light); border-radius:50%; opacity:0; animation:float-up linear infinite; }
+@keyframes float-up { 0%{transform:translateY(100vh) scale(0);opacity:0} 10%{opacity:.8} 90%{opacity:.3} 100%{transform:translateY(-20px) scale(1.5);opacity:0} }
+.confetti-wrap { position:fixed; inset:0; pointer-events:none; z-index:50; overflow:hidden; }
+
+/* SCENE */
+.scene { width:100%; max-width:430px; min-height:100vh; position:relative; z-index:10; display:flex; align-items:center; justify-content:center; padding:40px 24px 110px; }
+.card-scene { width:100%; }
+
+@keyframes rise { from{opacity:0;transform:translateY(40px) scale(.95)} to{opacity:1;transform:translateY(0) scale(1)} }
+
+/* ENVELOPE */
+.envelope { width:100%; cursor:pointer; user-select:none; -webkit-tap-highlight-color:transparent; animation:rise 1.2s cubic-bezier(.16,1,.3,1) both; }
+.envelope-body {
+  background:#1C1106; border-radius:4px;
+  border:1px solid rgba(201,168,76,.3);
+  padding:64px 32px 48px; text-align:center;
+  box-shadow:0 0 0 1px rgba(201,168,76,.1),0 0 60px rgba(201,168,76,.12),0 40px 80px rgba(0,0,0,.7);
+  position:relative; overflow:hidden;
+  transition:transform .15s ease;
+}
+.envelope:active .envelope-body { transform:scale(.97); }
+.envelope-body::after { content:''; position:absolute; inset:0; background:repeating-linear-gradient(-45deg,transparent,transparent 14px,rgba(201,168,76,.025) 14px,rgba(201,168,76,.025) 15px); pointer-events:none; }
+
+/* flap */
+.env-flap { position:absolute; top:0; left:0; right:0; width:100%; height:0; border-style:solid; border-width:80px 50% 0 50%; border-color:#251508 transparent transparent transparent; transform-origin:top center; transition:transform .7s cubic-bezier(.4,0,.2,1); z-index:3; pointer-events:none; }
+.env-flap.open { transform:rotateX(-180deg); }
+.env-crease-l,.env-crease-r { position:absolute; bottom:0; height:1px; width:54%; background:rgba(201,168,76,.12); pointer-events:none; z-index:1; }
+.env-crease-l { left:0;  transform-origin:bottom left;  transform:rotate(-20deg); }
+.env-crease-r { right:0; transform-origin:bottom right; transform:rotate(20deg); }
+
+.env-seal { position:relative; z-index:2; width:72px; height:72px; margin:0 auto 24px; animation:seal-pulse 3s ease-in-out infinite; }
+@keyframes seal-pulse { 0%,100%{filter:brightness(1)} 50%{filter:brightness(1.25)} }
+.env-label { font-family:'Cinzel',serif; font-size:9px; letter-spacing:.4em; color:var(--gold-dark); text-transform:uppercase; margin-bottom:10px; position:relative; z-index:2; }
+.env-name { font-family:'Playfair Display',serif; font-size:30px; font-weight:400; font-style:italic; color:var(--gold-light); margin-bottom:28px; line-height:1.2; position:relative; z-index:2; }
+.env-divider { width:100px; height:1px; background:linear-gradient(90deg,transparent,var(--gold),transparent); margin:0 auto 24px; position:relative; z-index:2; }
+.env-hint { font-family:'Cormorant Garamond',serif; font-size:14px; font-style:italic; color:rgba(201,168,76,.5); display:flex; align-items:center; justify-content:center; gap:10px; animation:hint-blink 2s ease-in-out infinite; position:relative; z-index:2; }
+@keyframes hint-blink { 0%,100%{opacity:.5} 50%{opacity:1} }
+.hint-circle { width:32px; height:32px; border:1px solid rgba(201,168,76,.35); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; }
+
+/* FLIP CARD */
+.flip-wrapper { display:none; width:100%; perspective:1400px; }
+.flip-wrapper.visible { display:block; }
+.flip-inner { position:relative; width:100%; transform-style:preserve-3d; transition:transform .85s cubic-bezier(.4,0,.2,1); }
+.flip-inner.flipped { transform:rotateY(180deg); }
+
+.flip-front,.flip-back {
+  width:100%; backface-visibility:hidden; -webkit-backface-visibility:hidden;
+  border-radius:2px; overflow:hidden;
+  box-shadow:0 0 0 1px rgba(201,168,76,.3),0 0 40px rgba(201,168,76,.15),0 40px 80px rgba(0,0,0,.6);
+}
+.flip-back {
+  position:absolute; top:0; left:0;
+  transform:rotateY(180deg);
+  background:var(--ink); min-height:220px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding:40px 32px; text-align:center; gap:16px;
+}
+.back-ornament { width:48px; opacity:.6; }
+.back-text { font-family:'Cinzel',serif; font-size:9px; letter-spacing:.35em; color:var(--gold-dark); text-transform:uppercase; line-height:2.2; }
+.back-flip-btn { margin-top:8px; padding:10px 24px; border:1px solid rgba(201,168,76,.3); border-radius:2px; background:transparent; font-family:'Cinzel',serif; font-size:9px; letter-spacing:.25em; color:var(--gold); cursor:pointer; text-transform:uppercase; -webkit-tap-highlight-color:transparent; transition:background .2s; }
+.back-flip-btn:active { background:rgba(201,168,76,.1); }
+
+/* CARD FRONT */
+.card { width:100%; background:var(--cream); position:relative; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.card::before { content:''; position:absolute; inset:10px; border:1px solid rgba(201,168,76,.4); border-radius:1px; z-index:0; pointer-events:none; }
+
+.card-flip-hint { position:absolute; bottom:10px; right:12px; z-index:5; font-family:'Cinzel',serif; font-size:8px; letter-spacing:.2em; color:rgba(139,105,20,.5); display:flex; align-items:center; gap:4px; text-transform:uppercase; pointer-events:none; }
+
+/* CARD HEADER */
+.card-header { position:relative; background:var(--ink); padding:52px 36px 44px; overflow:hidden; text-align:center; }
+.corner-tl,.corner-tr,.corner-bl,.corner-br { position:absolute; width:64px; height:64px; opacity:.6; }
+.corner-tl{top:8px;left:8px} .corner-tr{top:8px;right:8px;transform:scaleX(-1)} .corner-bl{bottom:8px;left:8px;transform:scaleY(-1)} .corner-br{bottom:8px;right:8px;transform:scale(-1,-1)}
+.header-divider { width:120px; height:1px; background:linear-gradient(90deg,transparent,var(--gold),transparent); margin:0 auto 20px; }
+.eyebrow { font-family:'Cinzel',serif; font-size:10px; letter-spacing:.35em; color:var(--gold); text-transform:uppercase; margin-bottom:20px; }
+.main-title { font-family:'Playfair Display',serif; font-size:42px; font-weight:400; line-height:1.1; color:var(--cream); margin-bottom:6px; }
+.main-title em { font-style:italic; color:var(--gold-light); }
+.subtitle-roman { font-family:'Cinzel',serif; font-size:10px; letter-spacing:.25em; color:var(--gold-dark); margin-bottom:24px; }
+.flame-wrap { margin:0 auto 24px; width:48px; }
+.flame-svg { width:48px; height:72px; animation:flicker 2.5s ease-in-out infinite alternate; }
+@keyframes flicker { 0%,100%{transform:scaleX(1) scaleY(1) rotate(-1deg)} 25%{transform:scaleX(.92) scaleY(1.04) rotate(1.5deg)} 50%{transform:scaleX(1.05) scaleY(.96) rotate(-.5deg)} 75%{transform:scaleX(.96) scaleY(1.03) rotate(2deg)} }
+
+/* CARD BODY */
+.card-body { position:relative; z-index:1; padding:40px 36px; background:var(--cream); text-align:center; }
+.name-label { font-family:'Cinzel',serif; font-size:9px; letter-spacing:.4em; color:var(--ink-muted); text-transform:uppercase; margin-bottom:8px; }
+.recipient-name { font-family:'Playfair Display',serif; font-size:36px; font-weight:700; color:var(--ink); line-height:1.1; margin-bottom:4px; }
+.age-display { font-family:'Cormorant Garamond',serif; font-size:15px; font-style:italic; color:var(--gold-dark); margin-bottom:28px; }
+.ornament-line { display:flex; align-items:center; gap:12px; margin-bottom:28px; }
+.ornament-line::before { content:''; flex:1; height:1px; background:linear-gradient(90deg,transparent,rgba(201,168,76,.5)); }
+.ornament-line::after  { content:''; flex:1; height:1px; background:linear-gradient(90deg,rgba(201,168,76,.5),transparent); }
+.ornament-diamond { width:6px; height:6px; background:var(--gold); transform:rotate(45deg); flex-shrink:0; }
+.message-text { font-family:'Cormorant Garamond',serif; font-size:18px; font-weight:300; line-height:1.8; color:var(--ink-soft); margin-bottom:32px; font-style:italic; }
+.message-text strong { font-style:normal; font-weight:400; color:var(--gold-dark); }
+
+/* CARD FOOTER */
+.card-footer { position:relative; z-index:1; background:var(--ink); padding:28px 36px; text-align:center; overflow:hidden; }
+.card-footer::before { content:''; position:absolute; inset:0; background:repeating-linear-gradient(45deg,transparent,transparent 8px,rgba(201,168,76,.03) 8px,rgba(201,168,76,.03) 9px); }
+.from-label { font-family:'Cinzel',serif; font-size:8px; letter-spacing:.45em; color:var(--gold-dark); text-transform:uppercase; margin-bottom:6px; position:relative; }
+.sender-name { font-family:'Playfair Display',serif; font-size:22px; font-style:italic; color:var(--gold-light); position:relative; }
+.seal { width:56px; height:56px; margin:20px auto 0; }
+.seal-svg { animation:spin-slow 20s linear infinite; }
+@keyframes spin-slow { to{transform:rotate(360deg)} }
+
+/* FABs */
+.fab { position:fixed; bottom:32px; right:24px; z-index:20; width:52px; height:52px; border-radius:50%; background:var(--gold); border:none; cursor:pointer; display:none; align-items:center; justify-content:center; box-shadow:0 4px 20px rgba(201,168,76,.4); -webkit-tap-highlight-color:transparent; transition:transform .2s; }
+.fab.visible { display:flex; } .fab:active{transform:scale(.92)} .fab svg{width:22px;height:22px}
+.share-btn { position:fixed; bottom:32px; left:24px; z-index:20; padding:0 20px; height:52px; border-radius:26px; background:transparent; border:1px solid rgba(201,168,76,.35); color:var(--gold); font-family:'Cinzel',serif; font-size:10px; letter-spacing:.25em; text-transform:uppercase; cursor:pointer; display:none; align-items:center; gap:8px; -webkit-tap-highlight-color:transparent; transition:background .2s; }
+.share-btn.visible{display:flex} .share-btn:active{background:rgba(201,168,76,.1)}
+
+/* EDIT OVERLAY */
+.edit-overlay { display:none; position:fixed; inset:0; z-index:100; background:rgba(10,6,2,.93); padding:40px 24px; overflow-y:auto; }
+.edit-overlay.active{display:block}
+.edit-title { font-family:'Cinzel',serif; font-size:14px; letter-spacing:.2em; color:var(--gold); text-align:center; margin-bottom:28px; text-transform:uppercase; }
+.edit-group { margin-bottom:20px; }
+.edit-label { font-family:'Cinzel',serif; font-size:9px; letter-spacing:.3em; color:var(--gold-dark); text-transform:uppercase; margin-bottom:8px; display:block; }
+.edit-input,.edit-textarea { width:100%; background:rgba(201,168,76,.07); border:1px solid rgba(201,168,76,.25); border-radius:2px; padding:12px 14px; font-family:'Cormorant Garamond',serif; font-size:17px; color:var(--cream); outline:none; transition:border-color .2s; -webkit-appearance:none; }
+.edit-input:focus,.edit-textarea:focus{border-color:rgba(201,168,76,.6)}
+.edit-textarea{min-height:100px;resize:vertical}
+.btn-row{display:flex;gap:12px;margin-top:28px}
+.btn{flex:1;padding:14px;font-family:'Cinzel',serif;font-size:11px;letter-spacing:.2em;text-transform:uppercase;border:none;border-radius:2px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:opacity .2s}
+.btn:active{opacity:.7} .btn-save{background:var(--gold);color:var(--ink)} .btn-cancel{background:transparent;border:1px solid rgba(201,168,76,.3);color:var(--gold-dark)}
+
+/* TOAST */
+.toast { position:fixed; bottom:100px; left:50%; transform:translateX(-50%) translateY(20px); background:rgba(201,168,76,.95); color:var(--ink); font-family:'Cinzel',serif; font-size:10px; letter-spacing:.15em; padding:10px 20px; border-radius:20px; opacity:0; transition:all .3s ease; pointer-events:none; white-space:nowrap; z-index:200; }
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<div class="bg-deep"></div>
+<div class="particles" id="particles"></div>
+<div class="confetti-wrap" id="confetti"></div>
+
+<div class="scene">
+<div class="card-scene">
+
+  <!-- ENVELOPE -->
+  <div class="envelope" id="envelope">
+    <div class="envelope-body">
+      <div class="env-flap" id="envFlap"></div>
+      <div class="env-crease-l"></div>
+      <div class="env-crease-r"></div>
+      <div class="env-seal">
+        <svg viewBox="0 0 72 72" fill="none">
+          <circle cx="36" cy="36" r="34" fill="rgba(201,168,76,.08)" stroke="#C9A84C" stroke-width=".75" stroke-dasharray="3 2"/>
+          <circle cx="36" cy="36" r="25" fill="rgba(201,168,76,.07)" stroke="rgba(201,168,76,.35)" stroke-width=".5"/>
+          <circle cx="36" cy="36" r="16" fill="rgba(201,168,76,.14)"/>
+          <path d="M36 22 L39 31 L49 31 L41 37 L44 46 L36 40 L28 46 L31 37 L23 31 L33 31 Z" fill="#C9A84C" opacity=".8"/>
+          <circle cx="36" cy="4"  r="2" fill="#C9A84C" opacity=".45"/>
+          <circle cx="68" cy="36" r="2" fill="#C9A84C" opacity=".45"/>
+          <circle cx="4"  cy="36" r="2" fill="#C9A84C" opacity=".45"/>
+          <circle cx="36" cy="68" r="2" fill="#C9A84C" opacity=".45"/>
+        </svg>
+      </div>
+      <div class="env-label">Surat Istimewa Untuk</div>
+      <div class="env-name" id="env-name">UDEL NYAMNYAM</div>
+      <div class="env-divider"></div>
+      <div class="env-hint">
+        <div class="hint-circle">👆</div>
+        <span>PENCET YAAAA</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- FLIP CARD -->
+  <div class="flip-wrapper" id="flipWrapper">
+    <div class="flip-inner" id="flipInner">
+
+      <!-- FRONT -->
+      <div class="flip-front" id="cardFront">
+        <div class="card" id="cardEl">
+          <div class="card-header">
+            <svg class="corner-tl" viewBox="0 0 64 64" fill="none"><path d="M8 8L8 32Q8 56 32 56" stroke="#C9A84C" stroke-width=".75" fill="none"/><path d="M8 8L32 8Q56 8 56 32" stroke="#C9A84C" stroke-width=".75" fill="none"/><circle cx="8" cy="8" r="2" fill="#C9A84C" opacity=".7"/><path d="M16 8L20 4L24 8L20 12Z" fill="#C9A84C" opacity=".4"/><path d="M8 16L4 20L8 24L12 20Z" fill="#C9A84C" opacity=".4"/></svg>
+            <svg class="corner-tr" viewBox="0 0 64 64" fill="none"><path d="M8 8L8 32Q8 56 32 56" stroke="#C9A84C" stroke-width=".75" fill="none"/><path d="M8 8L32 8Q56 8 56 32" stroke="#C9A84C" stroke-width=".75" fill="none"/><circle cx="8" cy="8" r="2" fill="#C9A84C" opacity=".7"/><path d="M16 8L20 4L24 8L20 12Z" fill="#C9A84C" opacity=".4"/><path d="M8 16L4 20L8 24L12 20Z" fill="#C9A84C" opacity=".4"/></svg>
+            <svg class="corner-bl" viewBox="0 0 64 64" fill="none"><path d="M8 8L8 32Q8 56 32 56" stroke="#C9A84C" stroke-width=".75" fill="none"/><path d="M8 8L32 8Q56 8 56 32" stroke="#C9A84C" stroke-width=".75" fill="none"/><circle cx="8" cy="8" r="2" fill="#C9A84C" opacity=".7"/></svg>
+            <svg class="corner-br" viewBox="0 0 64 64" fill="none"><path d="M8 8L8 32Q8 56 32 56" stroke="#C9A84C" stroke-width=".75" fill="none"/><path d="M8 8L32 8Q56 8 56 32" stroke="#C9A84C" stroke-width=".75" fill="none"/><circle cx="8" cy="8" r="2" fill="#C9A84C" opacity=".7"/></svg>
+
+            <div class="eyebrow">Sebuah Permohonan Nomor Rekening</div>
+            <div class="flame-wrap">
+              <svg class="flame-svg" viewBox="0 0 48 72" fill="none">
+                <ellipse cx="24" cy="36" rx="18" ry="18" fill="rgba(201,168,76,.08)"/>
+                <path d="M24 8C18 18 10 28 14 40C16 48 20 52 24 54C28 52 32 48 34 40C38 28 30 18 24 8Z" fill="url(#fg)" opacity=".9"/>
+                <path d="M24 20C21 27 18 34 20 40C21 44 22 47 24 48C26 47 27 44 28 40C30 34 27 27 24 20Z" fill="url(#fi)"/>
+                <rect x="19" y="54" width="10" height="16" rx="1" fill="#FAF6ED" opacity=".9"/>
+                <rect x="20" y="55" width="2" height="14" fill="rgba(201,168,76,.15)"/>
+                <line x1="24" y1="54" x2="24" y2="20" stroke="#3D2B0E" stroke-width=".8" opacity=".5"/>
+                <path d="M29 58Q31 62 30 66" stroke="#FAF6ED" stroke-width="1.5" fill="none" opacity=".5"/>
+                <defs>
+                  <linearGradient id="fg" x1="24" y1="8" x2="24" y2="54" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#FFF5E0" stop-opacity=".95"/><stop offset="40%" stop-color="#F5A623" stop-opacity=".9"/><stop offset="100%" stop-color="#C9A84C" stop-opacity=".6"/></linearGradient>
+                  <linearGradient id="fi" x1="24" y1="20" x2="24" y2="48" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#FFFFFF" stop-opacity=".95"/><stop offset="100%" stop-color="#FFF5E0" stop-opacity=".5"/></linearGradient>
+                </defs>
+              </svg>
+            </div>
+            <div class="header-divider"></div>
+            <div class="main-title">Terimakasih<br><em>Sudah Membantu</em></div>
+            <div class="subtitle-roman" style="margin-top:10px">✦ &nbsp; Beli Tiket KING PERSIB &nbsp; ✦</div>
+          </div>
+
+          <div class="card-body">
+            <div class="name-label">Kepada Yang Terhormat</div>
+            <div class="recipient-name" id="display-name">UDEL NYAMNYAM</div>
+            <div class="age-display" id="display-age">di malam ini saya ingin menyampaikan terimakasih atas bantuan yang telah diberikan</div>
+            <div class="ornament-line"><div class="ornament-diamond"></div></div>
+            <div class="message-text" id="display-message">
+              Saya ingin meminta informasi nomor rekening anda<br>
+              Saya tidak bermaksud meminta untuk dibelikan tiket KING PERSIB itu<br>
+              <strong>JANGAN GITU DONG</strong>,<br>
+              Apa yang membuat anda tidak mau memberikan informasi nomor rekening anda?<br>
+              Mohon dijawab<br>
+              Terimakasih banyak sebelumnya, Terimakasih sudah membantu saya, Terimakasih semuanya<br>
+            </div>
+            <div class="ornament-line"><div class="ornament-diamond"></div></div>
+          </div>
+
+          <div class="card-footer">
+            <div class="from-label">Dengan Segenap Hormat, Dari Sepupu</div>
+            <div class="sender-name" id="display-sender">RAFA 🐘🐘🐘</div>
+            <div class="seal">
+              <svg class="seal-svg" viewBox="0 0 56 56" fill="none">
+                <circle cx="28" cy="28" r="26" fill="rgba(201,168,76,.08)" stroke="#C9A84C" stroke-width=".75" stroke-dasharray="3 2"/>
+                <circle cx="28" cy="28" r="19" fill="rgba(201,168,76,.05)" stroke="rgba(201,168,76,.4)" stroke-width=".5"/>
+                <circle cx="28" cy="28" r="13" fill="rgba(201,168,76,.12)"/>
+                <path d="M28 16L30 24L38 24L32 30L34 38L28 32L22 38L24 30L18 24L26 24Z" fill="#C9A84C" opacity=".7"/>
+                <circle cx="28" cy="6"  r="1.5" fill="#C9A84C" opacity=".5"/>
+                <circle cx="50" cy="28" r="1.5" fill="#C9A84C" opacity=".5"/>
+                <circle cx="6"  cy="28" r="1.5" fill="#C9A84C" opacity=".5"/>
+                <circle cx="28" cy="50" r="1.5" fill="#C9A84C" opacity=".5"/>
+              </svg>
+            </div>
+          </div>
+
+          <div class="card-flip-hint">↺ &nbsp; Ketuk untuk balik</div>
+        </div>
+      </div>
+
+      <!-- BACK -->
+      <div class="flip-back" id="cardBack">
+        <svg class="back-ornament" viewBox="0 0 48 48" fill="none">
+          <circle cx="24" cy="24" r="22" stroke="#C9A84C" stroke-width=".75" stroke-dasharray="3 2" opacity=".5"/>
+          <path d="M24 10L26.5 18L35 18L28.5 23L31 31L24 26L17 31L19.5 23L13 18L21.5 18Z" fill="#C9A84C" opacity=".6"/>
+        </svg>
+        <div class="back-text">Kartu ini dibuat dengan<br>sepenuh hati &amp; cinta tulus<br>✦</div>
+        <button class="back-flip-btn" id="backFlipBtn">↺ &nbsp; Balik ke depan</button>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- FABs -->
+<button class="fab" id="editBtn" aria-label="Edit kartu">
+  <svg viewBox="0 0 24 24" fill="none" stroke="#1A1208" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+</button>
+<button class="share-btn" id="shareBtn">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+  Bagikan
+</button>
+
+<!-- Edit Overlay -->
+<div class="edit-overlay" id="editOverlay">
+  <div class="edit-title">✦ &nbsp; Personalisasi Kartu &nbsp; ✦</div>
+  <div class="edit-group"><label class="edit-label" for="inp-name">Nama Penerima</label><input class="edit-input" id="inp-name" type="text" placeholder="cth: Budi Santoso" value="Nama Kamu"></div>
+  <div class="edit-group"><label class="edit-label" for="inp-age">Keterangan Usia</label><input class="edit-input" id="inp-age" type="text" placeholder="cth: di hari yang ke-25 ini" value="di hari yang ke-25 ini"></div>
+  <div class="edit-group"><label class="edit-label" for="inp-sender">Nama Pengirim</label><input class="edit-input" id="inp-sender" type="text" placeholder="cth: Keluarga Besar Ahmad" value="Nama Pengirim"></div>
+  <div class="edit-group"><label class="edit-label" for="inp-msg">Pesan Ucapan</label><textarea class="edit-textarea" id="inp-msg">Di hari yang penuh cahaya ini, semoga setiap langkahmu diiringi kebahagiaan yang melimpah, kesehatan yang sempurna, dan mimpi-mimpi yang menjadi kenyataan indah.</textarea></div>
+  <div class="btn-row"><button class="btn btn-cancel" id="cancelBtn">Batal</button><button class="btn btn-save" id="saveBtn">Simpan ✦</button></div>
+</div>
+
+<div class="toast" id="toast">Tautan disalin!</div>
+
+<script>
+// Particles
+const pWrap = document.getElementById('particles');
+for (let i = 0; i < 30; i++) {
+  const p = document.createElement('div'); p.className = 'particle';
+  p.style.cssText = `left:${Math.random()*100}%;width:${Math.random()*3+1}px;height:${Math.random()*3+1}px;animation-duration:${Math.random()*8+6}s;animation-delay:${Math.random()*8}s;`;
+  pWrap.appendChild(p);
+}
+
+// Confetti
+const COLORS = ['#C9A84C','#E8C97B','#F5E9C8','#FAF6ED','#8B6914','#fff8e7','#F5A623'];
+function burst() {
+  const wrap = document.getElementById('confetti');
+  wrap.innerHTML = '';
+  for (let i = 0; i < 70; i++) {
+    const el = document.createElement('div');
+    const rot = Math.random()*720+180;
+    const x = Math.random()*100, dur = Math.random()*1.5+1.5, delay = Math.random()*0.6;
+    const w = Math.random()*8+4, h = Math.random()*12+6;
+    el.style.cssText = `position:absolute;left:${x}%;top:-14px;width:${w}px;height:${h}px;background:${COLORS[i%COLORS.length]};border-radius:1px;opacity:0;transform:rotate(${Math.random()*360}deg);animation:cf ${dur}s ${delay}s ease-out forwards;`;
+    wrap.appendChild(el);
+  }
+}
+const cfStyle = document.createElement('style');
+cfStyle.textContent = '@keyframes cf{0%{transform:translateY(0) rotate(0deg);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}';
+document.head.appendChild(cfStyle);
+
+// Envelope open
+const envelope = document.getElementById('envelope');
+const envFlap  = document.getElementById('envFlap');
+const flipWrapper = document.getElementById('flipWrapper');
+const editBtn  = document.getElementById('editBtn');
+const shareBtn = document.getElementById('shareBtn');
+let opened = false;
+
+envelope.addEventListener('click', () => {
+  if (opened) return;
+  opened = true;
+  envFlap.classList.add('open');
+  setTimeout(burst, 450);
+  setTimeout(() => {
+    envelope.style.transition = 'opacity .5s ease, transform .5s ease';
+    envelope.style.opacity = '0';
+    envelope.style.transform = 'translateY(20px) scale(.95)';
+  }, 750);
+  setTimeout(() => {
+    envelope.style.display = 'none';
+    flipWrapper.classList.add('visible');
+    editBtn.classList.add('visible');
+    shareBtn.classList.add('visible');
+    document.getElementById('cardFront').style.animation = 'rise .8s cubic-bezier(.16,1,.3,1) both';
+  }, 1250);
+});
+
+// Flip front → back (tap anywhere on card)
+const flipInner = document.getElementById('flipInner');
+const cardEl    = document.getElementById('cardEl');
+
+cardEl.addEventListener('click', (e) => {
+  if (e.target.closest('#editBtn')) return;
+  flipInner.classList.add('flipped');
+});
+
+// Flip back → front
+document.getElementById('backFlipBtn').addEventListener('click', (e) => {
+  e.stopPropagation();
+  flipInner.classList.remove('flipped');
+});
+
+// Edit
+editBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  document.getElementById('editOverlay').classList.add('active');
+  document.getElementById('inp-name').focus();
+});
+document.getElementById('cancelBtn').addEventListener('click', () => {
+  document.getElementById('editOverlay').classList.remove('active');
+});
+function nl2br(s) { return s.split('\n').map(l=>l.trim()).filter(Boolean).join('<br>'); }
+document.getElementById('saveBtn').addEventListener('click', () => {
+  const name   = document.getElementById('inp-name').value.trim()   || 'Nama Kamu';
+  const age    = document.getElementById('inp-age').value.trim()    || '';
+  const sender = document.getElementById('inp-sender').value.trim() || 'Nama Pengirim';
+  const msg    = document.getElementById('inp-msg').value.trim()    || '';
+  document.getElementById('display-name').textContent   = name;
+  document.getElementById('display-age').textContent    = age;
+  document.getElementById('display-sender').textContent = sender;
+  document.getElementById('display-message').innerHTML  = nl2br(msg);
+  document.getElementById('env-name').textContent       = name;
+  document.getElementById('editOverlay').classList.remove('active');
+});
+
+// Share
+shareBtn.addEventListener('click', async (e) => {
+  e.stopPropagation();
+  const name = document.getElementById('display-name').textContent;
+  if (navigator.share) {
+    try { await navigator.share({title:`Selamat Ulang Tahun, ${name}!`, text:`Kartu ucapan untuk ${name} ✨`, url:window.location.href}); } catch(e){}
+  } else {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      const t = document.getElementById('toast'); t.classList.add('show');
+      setTimeout(()=>t.classList.remove('show'),2500);
+    } catch(e){}
+  }
+});
+
+// iOS no pull-to-refresh
+document.body.addEventListener('touchmove', (e) => {
+  if (e.target.closest('.edit-overlay')) return;
+  e.preventDefault();
+}, {passive:false});
+</script>
+</body>
+</html>
